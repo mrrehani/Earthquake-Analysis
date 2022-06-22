@@ -1,0 +1,279 @@
+---
+title: "Analysis of Earthquake Magnitude Difference between 1965-2003 and 2004-2016"
+output: html_document
+---
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE }
+library(tidyverse)
+library(lubridate)
+library(kableExtra)
+library(scales)
+source("../scripts/ggprob.R")
+
+```
+## Introduction 
+
+With our Earth’s tectonic plates ever-shifting, earthquakes have occurred as a result, which can have immediate and long-term impacts on people's life. Magnitude, as one of the determining factors of the earthquake level, may indicate how much energy is released during the earthquake. The magnitude of the earthquake might fluctuate depending on the level of the tectonic plate impact [[1]](#link1). Just as the structure of the Earth is changing, earthquakes may also be changing at different rates or in different ways at various locations in the world. 
+
+Some studies show that large earthquakes greater than 8.0 in magnitude have increased slightly since 2004 [[2]](#link2). Hence, we are wondering if the average magnitude of the significant earthquake also increases statistically significantly before and after 2004. In this report, we are looking at the potential relationship between the magnitude of the earthquake from the time frame 1965-2003 in comparison to 2004-2016. We are hypothesizing that the earthquakes’ average monthly magnitude from 1965 to 2003 is statistically significantly different from the average monthly magnitude from 2004 to 2016.
+
+
+## Background
+
+We are examining earthquakes, ranging from 1965 to 2016 with a magnitude of 5.5 or higher, that were recorded by The National Earthquake Information Center (NEIC). This data was made available to us thanks to the seismographic network that recorded the vibration energy released by the ground at each seismic station.The database is available for free downloading on Kaggle [[3]](#link3). 
+![](animation.gif)
+
+Animation shows how the magnitude of significant earthquakes changed throughout the world from 1965 to 2016
+
+#### Data
+
+```{r, include=FALSE}
+data_all = read.csv("database.csv")
+data_all = data_all %>% 
+  mutate(Date=as.Date(Date,format="%m/%d/%Y")) %>% 
+  mutate(month=as.character(month(Date)),year=as.integer(year(Date))) %>% 
+  select(year,month,Magnitude)
+data_before=data_all %>% 
+  filter(year<2004)
+data_after = data_all %>% 
+  filter(year>2003)
+datasorted = data_all %>% 
+  group_by(year,month) %>% 
+  summarize(count=n(),Magnitude=sum(Magnitude)/count)
+datasorted_before = datasorted %>% 
+  filter(year<2004)
+datasorted_after = datasorted %>% 
+  filter(year>2003)
+
+```
+
+Summary of average monthly magnitude of Earthquake from 1965 to 2003 data set: 
+```{r,echo=FALSE}
+datasorted_before_table=datasorted_before %>% 
+  mutate(year=as.character(year))
+datasorted_before_table1 = datasorted_before_table %>% 
+  select(year,Magnitude,count)
+before_summary=summary(datasorted_before_table1)
+before_summary%>% 
+  kbl(caption = "Summary of average monthly magnitude of Earthquake from 1965 to 2003 data set ") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Summary of average monthly magnitude of Earthquake from 2004 to 2016 data set:
+```{r,echo=FALSE}
+
+after_summary=summary(datasorted_after)
+datasorted_after_table=datasorted_after %>% 
+  mutate(year=as.character(year))
+datasorted_after_table1 = datasorted_after_table %>% 
+  select(year,Magnitude,count)
+after_summary=summary(datasorted_after_table1)
+after_summary%>% 
+  kbl(caption = "Summary of average monthly magnitude of Earthquake from 2004 to 2016 data set ") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+The data set comes from the National Earthquake Information Center (NEIC), an organization that collects data about earthquakes worldwide. They share this data with international organizations so that they too can utilize it for their research and/or predictions. Countries, where the data is collected for the set, include – but are not limited to – The United States, United Kingdom, Ghana, and Japan. The data set doesn’t explicitly label the countries, but rather the data set acknowledges the longitude and latitude – which then, with a large enough sample size, will accurately show which countries are present. In our project, we eliminated longitude and latitude variables in order to refine the size of the data set. 
+
+Overall, the data set includes 23412 earthquakes from 1965 to 2016 (19591 from 1965 to 2003 and 6818 from 2004 to 2016). We will be grouping earthquakes by month and average magnitude to ensure the size of the data set is small enough for analysis: total: 625 earthquakes (468 earthquakes from 1965 to 2003, and 156 earthquakes from 2004 to 2016). The data is comprehensive, as there is a large enough duration (1965-2016) and a large enough sample size (worldwide data). It is also clear what determines which data is included or not. Since the data set only records the magnitude of significant earthquakes over the world, earthquakes with minor magnitudes (less than 5.5) are not included in the data set.
+
+
+
+#### Variables
+
+
+```{r,echo=FALSE}
+earthquake_magnitude_variables = tibble(
+  Name = c("Year", "Month", "Count", "Magnitude"),
+  Description = c("The year shows which year the earthquakes happened. It is shown in the dbl format. ",
+                  "The month shows which month the earthquakes happened. It is shown in the dbl format. ",
+                  "The count summarizes the number of Significant earthquake in the month",
+                  "The magnitude represents the average size of the Earthquake of that month"))
+earthquake_magnitude_variables %>% 
+  kable(caption = "Key Variables from the Significant Earthquake Data set") %>% 
+  kable_styling(position = "left", full_width = FALSE,
+                bootstrap_options = c("striped"))
+
+
+```
+
+The rest of the report will examine if the average monthly significant earthquake magnitude from 1965 to 2003, has a statistically significant difference from the average monthly significant earthquake magnitude from 2004 to 2016. 
+
+## Analysis
+
+### Graphic of comparison between average monthly magnitude from 1965-2003 and after 2004
+
+*Here is a graph that illustrates the change in average monthly significant earthquake magnitude over world from 1965 to 2003:*
+
+```{r, echo = FALSE, message=FALSE,fig.height = 3, fig.cap = "**Mean Monthly Magnitude of Earthquake over World from 1965 to 2003**. The red line connects the annual mean earthquake magnitude (black points). The blue curve shows a smooth trend through the data using local regression method. The green dashed line shows the mean of the average monthly magnitude over years"}
+
+data=datasorted_before %>% 
+  mutate(RawDate=paste(year,month,"01",sep="-")) %>% 
+  mutate(Date=as.Date(RawDate,format="%Y-%m-%d")) %>% 
+  na.omit()
+         
+ggplot(data,aes(x=Date,y=Magnitude))+
+  geom_point()+
+  geom_line(color="red")+
+  geom_smooth(se=FALSE,method="loess")+
+  geom_hline(yintercept=5.887,linetype="dashed",color="green")+
+  xlab("Year")+
+  ylab("Average Monthly Magnitude")+
+  ggtitle("Magnitude of Significant Earthquakes over the world",subtitle = "1965-2003")
+
+```
+We see that the average monthly earthquake magnitude has gradually decreased from 1965 to 1970. After that, the magnitude decrease rate suddenly increases from 1970 to 1980. After 1980, the magnitude slightly increase until 1990 and then remained stable at around magnitude 5.87. 
+
+
+
+
+
+*Here is a graph that illustrates the change in average monthly significant earthquake magnitude over world from 2004 to 2016:*
+
+
+```{r, echo = FALSE, message=FALSE,fig.height = 3, fig.cap = "**Mean Monthly Magnitude of Earthquake over World from 2004 to 2016**. The red line connects the annual mean earthquake magnitude (black points). The blue curve shows a smooth trend through the data using local regression method.The green dashed line shows the mean of the average monthly magnitude over years"}
+
+data=datasorted_after %>% 
+  mutate(RawDate=paste(year,month,"01",sep="-")) %>% 
+  mutate(Date=as.Date(RawDate,format="%Y-%m-%d")) %>% 
+  na.omit()
+         
+ggplot(data,aes(x=Date,y=Magnitude))+
+  geom_point()+
+  geom_line(color="red")+
+  geom_smooth(se=FALSE,method="loess")+
+  geom_hline(yintercept=5.875,linetype="dashed",color="green")+
+  xlab("Year")+
+  ylab("Average Monthly Magnitude")+
+  ggtitle("Magnitude of Significant Earthquakes over the world",subtitle = "2004-2016")
+
+```
+
+We see that the average monthly earthquake magnitude has gradually increased from 2004 to 2008. After that, the magnitude remained stable at around magnitude 5.87 until 2016. 
+
+
+
+Since the mean of the data set from 1965 to 2003 and the mean of the data set from 2004 to 2021 is close (5.887 and 5.874). By comparing the trend from 1965 to 2003 and the trend from 2004 to 2016, it is hard to tell if there is statistically significant difference of average monthly magnitude between two data sets.Hence, two independent sample t test is required to test if there is statistically significant difference of average monthly magnitudes. 
+
+### Independent Two Sample t Test
+
+#### Estimates from Summary Data
+
+
+```{r,echo=FALSE}
+estimate_before=
+  tibble(year=c("1965-2003","2004-2016"),n=c(468,156),mean=c(mean(datasorted_before$Magnitude),mean(datasorted_after$Magnitude)),sd=c(sd(datasorted_before$Magnitude),sd(datasorted_after$Magnitude)))
+estimate_before%>% 
+  kbl(caption = "Important values from two sample t test") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+```
+<br>
+<br>
+
+
+#### Confidence Interval for $\mu 1$-$\mu 2$ & Two Sided Hypothesis Test
+
+
+ *$H0$ : $\mu 1$ = $\mu 2$*
+ 
+ *$H_a$ : $\mu 1$ $\neq$  $\mu 2$*
+ 
+
+Perform a two sample t-test to find the confidence interval: 
+
+```{r,include=FALSE}
+x = datasorted_before %>% 
+  pull(Magnitude)
+
+y = datasorted_after %>% 
+  pull(Magnitude)
+
+t.test(x, y)
+
+```
+
+```{r,echo=FALSE,results='asis'}
+ttest=tibble(t=1.5356,degree_of_freedom=364.12,p_value=0.1255,lower_bound=-0.003337186,upper_bound=0.027124042)
+ttest %>% 
+  kbl(caption = "Important values from two sample t test") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+<br>
+<br>
+
+
+
+#### Equation for Two Sample t-test for Confidence Interval
+
+$$
+\mu_1-\mu_2\pm t\times\sqrt{\frac{s_1^2}{n_1}+\frac{s_2^2}{n_2}}
+$$
+
+$$ 
+ \mu  = sample mean\\
+ t  = t value\\
+ n  = sample size \\
+ s  = sample standard deviation
+$$
+
+
+Applied to our data, we get the following formula:
+$$
+5.887294-5.875401\pm1.966518\times\sqrt{\frac{0.1042034^2}{468}+\frac{0.07575158^2}{156}}\approx -0.003337342, 0.0271242
+$$
+
+
+<br>
+<br>
+
+#### Equation for Two Sample t-test for T Statistic
+
+To calculate the T-statistic, we use the following formula:
+$$
+\frac{\mu_1-\mu_2}{\sqrt{\frac{s_1^2}{n_1}+\frac{s_2^2}{n_2}}}\\
+$$
+Applied to our data, we get the following formula:
+$$
+\frac{(5.887294-5.875401)}{\sqrt{\frac{0.1042034^2}{468}+\frac{0.07575158^2}{156}}}\approx1.53562
+$$
+
+<br>
+
+
+#### p Value Visualization 
+
+
+```{r,echo=FALSE}
+gt(364)+
+  geom_t_fill(364.12,a=1.5356)+
+  geom_t_fill(364.12,b=-1.5356)+
+  labs(title = "Frequency of Data Occurring Under Null Hypothesis",
+   	subtitle="Red Area Signifies Situations as Extreme or More",
+   	y= "Density",
+   	x = "Difference in Means")
+```
+
+
+The evidence is consistent with there being no difference in the mean monthly average earthquake magnitude between 1965 to 2003 and 2004 to 2016. (p=0.1255, two-sided t-test, df=364.12).
+
+
+
+## Discussion
+
+From the two-sample t-test, we can interpret that we are 95% confident the mean monthly magnitude of earthquakes from 1965 to 2003 is between 0.0033 lower and 0.027 higher than the mean monthly magnitude of the earthquake from 2004 to 2016.The confidence interval spans over 0 which helps prove the timeframe 2004-2016 is less likely to have a statistically significant difference compared to the timeframe 1965-2003. In addition, we can see the p-value calculated is 0.1255 which is higher than the $\alpha$ value: 0.05. We can not reject the null hypothesis: $H0$ : $\mu 1$ = $\mu 2$. Hence, there is not enough evidence to show that the monthly mean magnitude of the significant earthquakes from 1965 to 2003 has a statistically significant difference compared to the monthly mean magnitude of significant earthquakes from 2004 to 2016.
+
+
+We sorted the data and used the mean monthly earthquake magnitude instead of all the earthquake magnitude data to decrease the size of the data set from 23412 samples to 624 samples. Hence, some degree of freedom is lost during data transformation which might affect the outcome of the two-sample t-test. Based on our finding that there is no statistically significant difference in average monthly earthquake magnitude between 1965 to 2003 and 2004 to 2016. It is reasonable to raise a new question that could be investigated in the future: Is there any monthly trend among the average monthly earthquake magnitude? (Which month has the highest monthly earthquake magnitude, and which one has the lowest?)
+
+Furthermore, in the future, to test if there is a year trend in the monthly average earthquake magnitude, we can perform a correlation analysis to test if there is a correlation between year and monthly average earthquake magnitude. Our data set covers all the significant earthquakes from 1965 to 2016. In the future, we can collect additional data on the magnitude of significant earthquakes from 2017 to 2022 in order to refine and make the conclusion more persuasive.
+
+Looping back to our original points of interest, comparing the p-value calculated by the two-sample t-tests with a 95% confidence interval, we cannot reject the null hypothesis – denoted as $H0$ : $\mu 1$ = $\mu 2$. Our experiment concluded that there wasn’t a remarkable difference in magnitude trends to officially proclaim that the magnitudes of earthquakes does not have statistically significant difference over the years.
+
+
+## Reference
+[[1]]{#link1} “Earthquake Magnitude, Energy Release, and Shaking Intensity.” Earthquake Magnitude, Energy Release, and Shaking Intensity | U.S. Geological Survey, https://www.usgs.gov/programs/earthquake-hazards/earthquake-magnitude-energy-release-and-shaking-intensity. 
+
+[[2]]{#link2} Conners, Deanna. “Is the Number of Large Earthquakes Increasing?: Earth.” EarthSky, 11 Nov. 2017, https://earthsky.org/earth/are-large-earthquakes-increasing-in-frequency/. 
+
+[[3]]{#link3} Data source: https://www.kaggle.com/datasets/usgs/earthquake-database (accessed on 27 April 2022)
