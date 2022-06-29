@@ -1,5 +1,5 @@
 # Earthquake-Analysis
-![Contributors](https://img.shields.io/badge/Contributors-Michael%20Rehani-brightgreen)
+![Contributors](https://img.shields.io/badge/Contributors-Michael%20Rehani%2C%20MeleEvergreen--Nehemie%20Pluviose%2C%20Zhi%20Zheng%2C%20Peilan%20Zhang%2C%20Charlie%20Zhu-brightgreen)
 ![Licence](https://img.shields.io/github/license/mrrehani/Earthquake-Analysis)
 ![Size](https://img.shields.io/github/repo-size/mrrehani/Earthquake-Analysis)
 <br>
@@ -8,18 +8,24 @@
 </a>
 
 ## Description
-In this project, I focused on using machine learning to predict life expectancy based on a wide range of factors. To achieve this, I used a multiple linear regression method and combined this with interactive graphs and displays to demonstrate how variables like education and average GDP link to life expectancy across continents. I ensured that all data I used fit key assumptions for the regression analysis and worked to correct for factors like heteroscedasticity, multicollinearity, etc. that can potentially disrupt my end results.
+In this project, we worked to extract insights for a presentation using data from a novel source: specifically, we focused on shifts in the earthquake magnitude over the years. Preliminary background research suggested the average magnitude of earthquakes has increased since 2004. 
 
 ### Technologies Used:
-- Statsmodels (Ordinary Least Squares Regression) 
-- Pycountry_convert
+- Tidyverse
+- Lubridate
 - Matplotlib
-- Plotly
+- kableExtra
 
-### Instructions
+### Instructions for viewing the project:
 - Clone the repository
-- Open the notebook file, making sure that the 'Life Expectancy Data.csv' file is still in the same directory
-- Run the all the cells
+- Open the html file
+
+### Instructions for editing the project:
+- Clone the repository
+- Open the the .rmd file, ensuring that the 'database.csv' file is still in the same folder
+- If you are using RStudio, make sure that your current directory is the source file's location
+- Run all the chunks
+
 
 ### Credits
-The original source of the data can be found [here](https://www.kaggle.com/datasets/kumarajarshi/life-expectancy-who?ref=hackernoon.com).
+The original source of the data can be found [here](https://www.kaggle.com/datasets/usgs/earthquake-database).
